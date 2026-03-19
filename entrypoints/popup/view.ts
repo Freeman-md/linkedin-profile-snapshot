@@ -9,7 +9,7 @@ export type ViewState =
 
 export interface SnapshotActions {
   copyProfileUrl(snapshot: ProfileSnapshot): Promise<void>;
-  copyJson(snapshot: ProfileSnapshot): Promise<void>;
+  copyFullDetails(snapshot: ProfileSnapshot): Promise<void>;
 }
 
 export interface PopupView {
@@ -99,14 +99,33 @@ function renderSnapshot(
   const toolbar = document.createElement("div");
   toolbar.className = "toolbar";
   toolbar.append(
-    createButton("Copy LinkedIn URL", () => actions.copyProfileUrl(snapshot), "primary"),
-    createButton("Copy JSON", () => actions.copyJson(snapshot), "secondary"),
+    createButton("Copy Full Details", () => actions.copyFullDetails(snapshot), "primary"),
+    createButton("Copy LinkedIn URL", () => actions.copyProfileUrl(snapshot), "secondary"),
   );
 
   fragment.append(toolbar, createToast(), renderFields(snapshot));
 
-  if (snapshot.sections.length > 0) {
-    fragment.append(renderSections(snapshot));
+  if (snapshot.about) {
+    fragment.append(
+      renderTextSection("About", snapshot.about),
+    );
+  }
+
+  if (snapshot.recentActivity.length > 0) {
+    fragment.append(
+      renderDetailBlocksSection("Recent activity", snapshot.recentActivity),
+    );
+  }
+
+  if (snapshot.experiences.length > 0) {
+    fragment.append(
+      renderDetailBlocksSection("Experience details", snapshot.experiences),
+    );
+  }
+
+  const otherSections = renderSections(snapshot);
+  if (otherSections) {
+    fragment.append(otherSections);
   }
 
   return fragment;
@@ -137,22 +156,75 @@ function renderFields(snapshot: ProfileSnapshot): HTMLElement {
   return grid;
 }
 
-function renderSections(snapshot: ProfileSnapshot): HTMLElement {
+function renderSections(snapshot: ProfileSnapshot): HTMLElement | null {
+  const visibleSections = snapshot.sections.filter((section) => {
+    const normalizedTitle = section.title.toLowerCase();
+    return normalizedTitle !== "about" && normalizedTitle !== "activity" && normalizedTitle !== "experience";
+  });
+
+  if (visibleSections.length === 0) {
+    return null;
+  }
+
   const section = document.createElement("div");
   section.className = "section";
 
   const heading = document.createElement("h2");
-  heading.textContent = "Visible sections";
+  heading.textContent = "Other visible sections";
 
   const items = document.createElement("div");
   items.className = "items";
 
-  for (const profileSection of snapshot.sections) {
+  for (const profileSection of visibleSections) {
     const item = document.createElement("div");
     item.className = "item";
     item.innerHTML = `<strong>${escapeHtml(profileSection.title)}</strong><br />${escapeHtml(
       profileSection.items.join(" • "),
     )}`;
+    items.append(item);
+  }
+
+  section.append(heading, items);
+  return section;
+}
+
+function renderTextSection(title: string, content: string): HTMLElement {
+  const section = document.createElement("div");
+  section.className = "section";
+
+  const heading = document.createElement("h2");
+  heading.textContent = title;
+
+  const body = document.createElement("div");
+  body.className = "field";
+
+  const value = document.createElement("p");
+  value.className = "value";
+  value.textContent = content;
+
+  body.append(value);
+  section.append(heading, body);
+  return section;
+}
+
+function renderDetailBlocksSection(
+  title: string,
+  blocks: ProfileSnapshot["recentActivity"],
+): HTMLElement {
+  const section = document.createElement("div");
+  section.className = "section";
+
+  const heading = document.createElement("h2");
+  heading.textContent = title;
+
+  const items = document.createElement("div");
+  items.className = "items";
+
+  for (const block of blocks) {
+    const item = document.createElement("div");
+    item.className = "item";
+    const details = block.details.length > 0 ? `<br />${escapeHtml(block.details.join(" • "))}` : "";
+    item.innerHTML = `<strong>${escapeHtml(block.title)}</strong>${details}`;
     items.append(item);
   }
 

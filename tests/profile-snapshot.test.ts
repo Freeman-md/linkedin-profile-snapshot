@@ -39,17 +39,42 @@ describe("buildProfileSnapshot", () => {
               <p>Open to work</p>
             </section>
             <section>
+              <h2>Activity</h2>
+              <ul>
+                <li>
+                  <article>
+                    <div>Posted about building internal tooling</div>
+                    <div>2d</div>
+                    <div>47 reactions</div>
+                  </article>
+                </li>
+                <li>
+                  <article>
+                    <div>Commented on platform observability trends</div>
+                    <div>5d</div>
+                  </article>
+                </li>
+              </ul>
+            </section>
+            <section>
               <h2>Experience</h2>
-              <div>Staff Engineer at Example Ltd</div>
-              <div>2022 - Present</div>
-              <div>Mentor</div>
-              <div>Speaker</div>
-              <div>Advisor</div>
-              <div>Volunteer</div>
-              <div>Writer</div>
-              <div>Open source maintainer</div>
-              <div>See all 12 experiences</div>
-              <div>Reviewer</div>
+              <ul>
+                <li>
+                  <article>
+                    <div>Staff Engineer</div>
+                    <div>Example Ltd</div>
+                    <div>2022 - Present</div>
+                    <div>London, United Kingdom</div>
+                  </article>
+                </li>
+                <li>
+                  <article>
+                    <div>Senior Engineer</div>
+                    <div>Acme Systems</div>
+                    <div>2019 - 2022</div>
+                  </article>
+                </li>
+              </ul>
             </section>
           </main>
         </body>
@@ -73,6 +98,27 @@ describe("buildProfileSnapshot", () => {
     expect(snapshot.headline).toBe("Principal Engineer at Example Ltd");
     expect(snapshot.location).toBe("London, England, United Kingdom");
     expect(snapshot.summary).toBe("Builds developer tools for distributed teams.");
+    expect(snapshot.about).toBe("Builds developer tools for distributed teams.");
+    expect(snapshot.recentActivity).toEqual([
+      {
+        title: "Posted about building internal tooling",
+        details: ["2d", "47 reactions"],
+      },
+      {
+        title: "Commented on platform observability trends",
+        details: ["5d"],
+      },
+    ]);
+    expect(snapshot.experiences).toEqual([
+      {
+        title: "Staff Engineer",
+        details: ["Example Ltd", "2022 - Present", "London, United Kingdom"],
+      },
+      {
+        title: "Senior Engineer",
+        details: ["Acme Systems", "2019 - 2022"],
+      },
+    ]);
     expect(snapshot.topCardLines).toEqual([
       "Jane Doe",
       "Principal Engineer at Example Ltd",
@@ -85,16 +131,25 @@ describe("buildProfileSnapshot", () => {
         items: ["Builds developer tools for distributed teams."],
       },
       {
+        title: "Activity",
+        items: [
+          "Posted about building internal tooling",
+          "2d",
+          "47 reactions",
+          "Commented on platform observability trends",
+          "5d",
+        ],
+      },
+      {
         title: "Experience",
         items: [
-          "Staff Engineer at Example Ltd",
+          "Staff Engineer",
+          "Example Ltd",
           "2022 - Present",
-          "Mentor",
-          "Speaker",
-          "Advisor",
-          "Volunteer",
-          "Writer",
-          "Open source maintainer",
+          "London, United Kingdom",
+          "Senior Engineer",
+          "Acme Systems",
+          "2019 - 2022",
         ],
       },
     ]);
@@ -126,6 +181,9 @@ describe("buildProfileSnapshot", () => {
     );
 
     expect(snapshot.profileUrl).toBe("https://www.linkedin.com/in/jane-doe/");
+    expect(snapshot.about).toBe("");
+    expect(snapshot.recentActivity).toEqual([]);
+    expect(snapshot.experiences).toEqual([]);
   });
 
   it("prefers explicit top-card fields over CTA-like noise", () => {

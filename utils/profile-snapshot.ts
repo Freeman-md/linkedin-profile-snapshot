@@ -5,6 +5,11 @@ export interface ProfileSection {
   items: string[];
 }
 
+export interface ProfileDetailBlock {
+  title: string;
+  details: string[];
+}
+
 export interface ProfileSnapshot {
   profileUrl: string;
   pageUrl: string;
@@ -14,6 +19,9 @@ export interface ProfileSnapshot {
   headline: string;
   location: string;
   summary: string;
+  about: string;
+  recentActivity: ProfileDetailBlock[];
+  experiences: ProfileDetailBlock[];
   topCardLines: string[];
   sections: ProfileSection[];
 }
@@ -28,6 +36,8 @@ export type ProfileSnapshotResponse =
 
 const MAX_SECTION_ITEMS = 8;
 const MAX_SECTIONS = 8;
+const MAX_DETAIL_BLOCKS = 6;
+const MAX_DETAIL_LINES = 6;
 const TOP_CARD_HEADLINE_SELECTORS = [
   ".pv-text-details__left-panel .text-body-medium",
   ".text-body-medium.break-words",
@@ -89,7 +99,13 @@ export function buildProfileSnapshot(
   const topCardLines = extractVisibleLines(topCard ?? mainRegion);
   const derivedTopCard = deriveTopCardFields(topCard, topCardLines, name);
   const sections = extractSections(mainRegion);
-  const summary = pickSectionSummary(sections) ?? derivedTopCard.summary ?? "";
+  const aboutSection = findSection(mainRegion, "about");
+  const activitySection = findSection(mainRegion, "activity");
+  const experienceSection = findSection(mainRegion, "experience");
+  const about = pickAbout(aboutSection, sections);
+  const recentActivity = extractDetailBlocks(activitySection, "activity");
+  const experiences = extractDetailBlocks(experienceSection, "experience");
+  const summary = about || derivedTopCard.summary || "";
 
   return {
     profileUrl: canonicalUrl,
@@ -100,6 +116,9 @@ export function buildProfileSnapshot(
     headline: derivedTopCard.headline,
     location: derivedTopCard.location,
     summary,
+    about,
+    recentActivity,
+    experiences,
     topCardLines,
     sections,
   };
@@ -150,6 +169,19 @@ function findTopCard(root: ParentNode, name: string): HTMLElement | null {
   }
 
   return candidateSections[0] ?? null;
+}
+
+function findSection(root: ParentNode, expectedTitle: string): HTMLElement | null {
+  const normalizedExpectedTitle = expectedTitle.toLowerCase();
+
+  for (const section of Array.from(root.querySelectorAll<HTMLElement>("section"))) {
+    const title = getSectionTitle(section).toLowerCase();
+    if (title === normalizedExpectedTitle) {
+      return section;
+    }
+  }
+
+  return null;
 }
 
 function extractSections(root: ParentNode): ProfileSection[] {
@@ -205,6 +237,88 @@ function extractSectionItems(section: HTMLElement, title: string): string[] {
       return normalized !== titleLower && !isNoiseLine(normalized);
     })
     .slice(0, MAX_SECTION_ITEMS);
+}
+
+function extractDetailBlocks(
+  section: HTMLElement | null,
+  sectionTitle: string,
+): ProfileDetailBlock[] {
+  if (!section) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const result: ProfileDetailBlock[] = [];
+  const titleLower = sectionTitle.toLowerCase();
+
+  for (const candidate of getDetailCandidates(section)) {
+    const lines = extractVisibleLines(candidate)
+      .filter((line) => {
+        const normalized = line.toLowerCase();
+        return normalized !== titleLower && !isNoiseLine(normalized);
+      })
+      .slice(0, MAX_DETAIL_LINES);
+
+    if (lines.length === 0) {
+      continue;
+    }
+
+    const key = lines.join("\n").toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push({
+      title: lines[0],
+      details: lines.slice(1),
+    });
+
+    if (result.length >= MAX_DETAIL_BLOCKS) {
+      return result;
+    }
+  }
+
+  const fallbackItems = extractSectionItems(section, sectionTitle);
+  if (result.length === 0 && fallbackItems.length > 0) {
+    result.push({
+      title: fallbackItems[0],
+      details: fallbackItems.slice(1, MAX_DETAIL_LINES),
+    });
+  }
+
+  return result;
+}
+
+function getDetailCandidates(section: HTMLElement): HTMLElement[] {
+  const candidates = Array.from(
+    section.querySelectorAll<HTMLElement>("li, article"),
+  );
+
+  return candidates.filter((candidate) => {
+    if (!isVisibleElement(candidate)) {
+      return false;
+    }
+
+    return !hasNestedDetailAncestor(candidate, section);
+  });
+}
+
+function hasNestedDetailAncestor(
+  element: HTMLElement,
+  boundary: HTMLElement,
+): boolean {
+  let current = element.parentElement;
+
+  while (current && current !== boundary) {
+    if (current.matches("li, article")) {
+      return true;
+    }
+
+    current = current.parentElement;
+  }
+
+  return false;
 }
 
 function extractVisibleLines(root: ParentNode): string[] {
@@ -273,13 +387,22 @@ function pickBestEffortText(
   return undefined;
 }
 
-function pickSectionSummary(sections: ProfileSection[]): string {
-  const aboutSection = sections.find((section) => section.title.toLowerCase() === "about");
-  if (!aboutSection) {
-    return "";
+function pickAbout(
+  aboutSection: HTMLElement | null,
+  sections: ProfileSection[],
+): string {
+  const detailBlocks = extractDetailBlocks(aboutSection, "about");
+  if (detailBlocks.length > 0) {
+    return detailBlocks
+      .flatMap((block) => [block.title, ...block.details])
+      .join("\n");
   }
 
-  return aboutSection.items.slice(0, 3).join(" · ");
+  const fallbackSection = sections.find(
+    (section) => section.title.toLowerCase() === "about",
+  );
+
+  return fallbackSection ? fallbackSection.items.join("\n") : "";
 }
 
 function isLikelyProfileUrl(value: string): boolean {

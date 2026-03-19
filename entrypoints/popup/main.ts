@@ -16,10 +16,10 @@ const view = createPopupView(app, {
   async copyProfileUrl(snapshot) {
     await copyWithFeedback(snapshot.profileUrl, "LinkedIn URL copied.");
   },
-  async copyJson(snapshot) {
+  async copyFullDetails(snapshot) {
     await copyWithFeedback(
       JSON.stringify(snapshot, null, 2),
-      "Snapshot JSON copied.",
+      "Full profile details copied.",
     );
   },
 });
