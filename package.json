@@ -1,0 +1,31 @@
+{
+  "name": "linkedin-profile-snapshot-extension",
+  "version": "0.1.0",
+  "description": "Chrome extension that copies visible LinkedIn profile details and the canonical profile URL.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build --browser chrome",
+    "zip": "wxt zip --browser chrome",
+    "lint": "eslint .",
+    "typecheck": "wxt prepare && tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "@types/chrome": "^0.0.322",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@typescript-eslint/eslint-plugin": "^8.28.0",
+    "@typescript-eslint/parser": "^8.28.0",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.4",
+    "wxt": "^0.20.6"
+  }
+}

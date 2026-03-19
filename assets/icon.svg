@@ -1,0 +1,28 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 128 128"
+  role="img"
+  aria-labelledby="title desc"
+>
+  <title id="title">LinkedIn Profile Snapshot icon</title>
+  <desc id="desc">Rounded card with link and scan accents</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A66C2" />
+      <stop offset="100%" stop-color="#004182" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)" />
+  <rect x="24" y="24" width="80" height="80" rx="18" fill="#FFFFFF" opacity="0.96" />
+  <rect x="38" y="40" width="22" height="22" rx="11" fill="#0A66C2" />
+  <rect x="66" y="42" width="24" height="8" rx="4" fill="#0A66C2" opacity="0.88" />
+  <rect x="66" y="56" width="18" height="8" rx="4" fill="#6B7C93" opacity="0.9" />
+  <path
+    d="M43 82h42a8 8 0 0 0 0-16H69a8 8 0 0 0 0 16h16"
+    fill="none"
+    stroke="#0A66C2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="9"
+  />
+</svg>

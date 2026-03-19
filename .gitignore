@@ -1,0 +1,9 @@
+node_modules
+.output
+.wxt
+coverage
+dist
+.DS_Store
+playwright-report
+test-results
+*.log
