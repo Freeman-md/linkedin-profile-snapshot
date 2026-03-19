@@ -28,6 +28,16 @@ export type ProfileSnapshotResponse =
 
 const MAX_SECTION_ITEMS = 8;
 const MAX_SECTIONS = 8;
+const TOP_CARD_HEADLINE_SELECTORS = [
+  ".pv-text-details__left-panel .text-body-medium",
+  ".text-body-medium.break-words",
+  ".text-body-medium",
+];
+const TOP_CARD_LOCATION_SELECTORS = [
+  ".pv-text-details__left-panel .text-body-small",
+  ".text-body-small.inline",
+  ".text-body-small",
+];
 
 const SECTION_NOISE = new Set([
   "message",
@@ -77,7 +87,7 @@ export function buildProfileSnapshot(
   const name = pickName(mainRegion) ?? "";
   const topCard = findTopCard(mainRegion, name);
   const topCardLines = extractVisibleLines(topCard ?? mainRegion);
-  const derivedTopCard = deriveTopCardFields(topCardLines, name);
+  const derivedTopCard = deriveTopCardFields(topCard, topCardLines, name);
   const sections = extractSections(mainRegion);
   const summary = pickSectionSummary(sections) ?? derivedTopCard.summary ?? "";
 
@@ -204,7 +214,11 @@ function extractVisibleLines(root: ParentNode): string[] {
   return compactLines(textSource.split("\n").map(cleanText));
 }
 
-function deriveTopCardFields(lines: string[], name: string): {
+function deriveTopCardFields(
+  topCard: HTMLElement | null,
+  lines: string[],
+  name: string,
+): {
   headline: string;
   location: string;
   summary: string;
@@ -218,14 +232,45 @@ function deriveTopCardFields(lines: string[], name: string): {
     );
   });
 
-  const headline = filtered[0] ?? "";
-  const location =
-    filtered.find((line) => isLikelyLocation(line)) ??
-    filtered.find((line) => line !== headline && line.length < 80) ??
+  const headline =
+    pickBestEffortText(topCard, TOP_CARD_HEADLINE_SELECTORS, isLikelyHeadlineLine) ??
+    filtered.find((line) => isLikelyHeadlineLine(line)) ??
     "";
-  const summary = filtered.slice(1, 4).join(" · ");
+  const location =
+    pickBestEffortText(topCard, TOP_CARD_LOCATION_SELECTORS, isLikelyLocation) ??
+    filtered.find((line) => line !== headline && isLikelyLocation(line)) ??
+    "";
+  const summary = filtered
+    .filter((line) => line !== headline && line !== location)
+    .slice(0, 3)
+    .join(" · ");
 
   return { headline, location, summary };
+}
+
+function pickBestEffortText(
+  root: ParentNode | null,
+  selectors: string[],
+  predicate: (value: string) => boolean,
+): string | undefined {
+  if (!root) {
+    return undefined;
+  }
+
+  for (const selector of selectors) {
+    for (const element of Array.from(root.querySelectorAll<HTMLElement>(selector))) {
+      if (!isVisibleElement(element)) {
+        continue;
+      }
+
+      const text = cleanText(element.innerText);
+      if (text && predicate(text)) {
+        return text;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function pickSectionSummary(sections: ProfileSection[]): string {
@@ -276,8 +321,32 @@ function isNoiseLine(value: string): boolean {
   );
 }
 
+function isLikelyHeadlineLine(value: string): boolean {
+  if (isNoiseLine(value) || isLikelyLocation(value)) {
+    return false;
+  }
+
+  return !/^(\d+\+?\s+)?(follower|followers|connection|connections|mutual connection|mutual connections)$/i.test(
+    value,
+  );
+}
+
 function isLikelyLocation(value: string): boolean {
   return /,/.test(value) || /\b(remote|united kingdom|united states|europe|london|england|canada|india|germany|france|netherlands|australia)\b/i.test(value);
+}
+
+function isVisibleElement(element: HTMLElement): boolean {
+  if (element.hidden || element.closest("[aria-hidden='true']")) {
+    return false;
+  }
+
+  const defaultView = element.ownerDocument.defaultView;
+  if (!defaultView) {
+    return true;
+  }
+
+  const style = defaultView.getComputedStyle(element);
+  return style.display !== "none" && style.visibility !== "hidden";
 }
 
 function cleanText(value: string): string {

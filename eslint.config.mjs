@@ -20,7 +20,6 @@ export default [
       sourceType: "module",
       globals: {
         ...browserGlobals,
-        ...globals.node,
       },
       parser: tsParser,
       parserOptions: {
@@ -32,6 +31,7 @@ export default [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
+      "no-undef": "off",
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -40,6 +40,14 @@ export default [
           "caughtErrorsIgnorePattern": "^_"
         }
       ]
+    },
+  },
+  {
+    files: ["*.config.{js,mjs,cjs,ts}", "tests/**/*.ts"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
     },
   },
 ];
